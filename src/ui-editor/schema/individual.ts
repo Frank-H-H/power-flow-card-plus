@@ -16,19 +16,8 @@ const mainSchema = {
       selector: { boolean: {} },
     },
     {
-      name: "unit_of_measurement",
-      label: "Unit of Measurement",
-      selector: { text: {} },
-    },
-    {
       name: "display_zero",
       label: "Display Zero",
-      selector: { boolean: {} },
-    },
-
-    {
-      name: "inverted_animation",
-      label: "Invert Animation",
       selector: { boolean: {} },
     },
     {
@@ -42,13 +31,23 @@ const mainSchema = {
       selector: { boolean: {} },
     },
     {
+      name: "unit_of_measurement",
+      label: "Unit of Measurement",
+      selector: { text: {} },
+    },
+    {
+      name: "calculate_flow_rate",
+      label: "Calculate Flow Rate",
+      selector: { boolean: {} },
+    },
+    {
       name: "decimals",
       label: "Decimals",
       selector: { number: { mode: "box", min: 0, max: 4, step: 1 } },
     },
     {
-      name: "calculate_flow_rate",
-      label: "Calculate Flow Rate",
+      name: "inverted_animation",
+      label: "Invert Animation",
       selector: { boolean: {} },
     },
   ],

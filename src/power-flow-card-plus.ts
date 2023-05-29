@@ -15,6 +15,7 @@ import { RenderTemplateResult, subscribeRenderTemplate } from "./template/ha-web
 import { styles } from "./style";
 import { defaultValues, getDefaultConfig } from "./utils/get-default-config";
 import getElementWidth from "./utils/get-element-width";
+import localize from "./localize/localize";
 
 const circleCircumference = 238.76104;
 
@@ -263,14 +264,17 @@ export class PowerFlowCardPlus extends LitElement {
       this._config.clickable_entities ? "pointer" : "default"
     ); /* show pointer if clickable entities is enabled */
 
+    const initialNumericState = null as null | number;
+    const initialSecondaryState = null as null | string | number;
+
     const grid = {
       entity: entities.grid?.entity,
       has: entities?.grid?.entity !== undefined,
       hasReturnToGrid: typeof entities.grid?.entity === "string" || entities.grid?.entity?.production,
       state: {
-        fromGrid: null as null | number,
-        toGrid: null as null | number,
-        toBattery: null as null | number,
+        fromGrid: initialNumericState,
+        toGrid: initialNumericState,
+        toBattery: initialNumericState,
       },
       powerOutage: {
         has: this.hasField(entities.grid?.power_outage, true),
@@ -290,7 +294,7 @@ export class PowerFlowCardPlus extends LitElement {
       secondary: {
         entity: entities.grid?.secondary_info?.entity,
         has: this.hasField(entities.grid?.secondary_info),
-        state: null as number | string | null,
+        state: initialSecondaryState,
         icon: entities.grid?.secondary_info?.icon,
         unit: entities.grid?.secondary_info?.unit_of_measurement,
         unit_white_space: entities.grid?.secondary_info?.unit_white_space,
@@ -304,17 +308,17 @@ export class PowerFlowCardPlus extends LitElement {
       entity: entities.solar?.entity as string | undefined,
       has: entities.solar?.entity !== undefined,
       state: {
-        total: null as number | null,
-        toHome: null as number | null,
-        toGrid: null as number | null,
-        toBattery: null as number | null,
+        total: initialNumericState,
+        toHome: initialNumericState,
+        toGrid: initialNumericState,
+        toBattery: initialNumericState,
       },
       icon: this.computeFieldIcon(entities.solar, "mdi:solar-power"),
       name: this.computeFieldName(entities.solar, this.hass.localize("ui.panel.lovelace.cards.energy.energy_distribution.solar")),
       secondary: {
         entity: entities.solar?.secondary_info?.entity,
         has: this.hasField(entities.solar?.secondary_info),
-        state: null as number | string | null,
+        state: initialSecondaryState,
         icon: entities.solar?.secondary_info?.icon,
         unit: entities.solar?.secondary_info?.unit_of_measurement,
         unit_white_space: entities.solar?.secondary_info?.unit_white_space,
@@ -349,7 +353,7 @@ export class PowerFlowCardPlus extends LitElement {
     const home = {
       entity: entities.home?.entity,
       has: entities?.home?.entity !== undefined,
-      state: null as number | null,
+      state: initialNumericState,
       icon: this.computeFieldIcon(entities?.home, "mdi:home"),
       name: this.computeFieldName(entities?.home, this.hass.localize("ui.panel.lovelace.cards.energy.energy_distribution.home")),
       color: {
@@ -358,7 +362,7 @@ export class PowerFlowCardPlus extends LitElement {
       secondary: {
         entity: entities.home?.secondary_info?.entity,
         has: this.hasField(entities.home?.secondary_info),
-        state: null as number | string | null,
+        state: initialSecondaryState,
       },
     };
 
@@ -367,9 +371,9 @@ export class PowerFlowCardPlus extends LitElement {
       has: this.hasField(entities[field]),
       displayZero: entities[field]?.display_zero,
       displayZeroTolerance: entities[field]?.display_zero_tolerance,
-      state: null as number | null,
+      state: initialNumericState,
       icon: this.computeFieldIcon(entities[field], field === "individual1" ? "mdi:car-electric" : "mdi:motorbike-electric"),
-      name: this.computeFieldName(entities[field], field === "individual1" ? "Car" : "Motorcycle"),
+      name: this.computeFieldName(entities[field], field === "individual1" ? localize("card.label.car") : localize("card.label.motorbike")),
       color: entities[field]?.color,
       unit: entities[field]?.unit_of_measurement,
       unit_white_space: entities[field]?.unit_white_space,
@@ -377,7 +381,7 @@ export class PowerFlowCardPlus extends LitElement {
       secondary: {
         entity: entities[field]?.secondary_info?.entity,
         has: this.hasField(entities[field]?.secondary_info, true),
-        state: null as number | string | null,
+        state: initialSecondaryState,
         icon: entities[field]?.secondary_info?.icon,
         unit: entities[field]?.secondary_info?.unit_of_measurement,
         unit_white_space: entities[field]?.secondary_info?.unit_white_space,
@@ -409,13 +413,13 @@ export class PowerFlowCardPlus extends LitElement {
           entities.fossil_fuel_percentage?.entity !== undefined &&
           this.entityAvailable(entities.fossil_fuel_percentage?.entity)),
       state: {
-        power: null as number | null,
+        power: initialNumericState,
       },
       color: entities.fossil_fuel_percentage?.color,
       secondary: {
         entity: entities.fossil_fuel_percentage?.secondary_info?.entity,
         has: this.hasField(entities.fossil_fuel_percentage?.secondary_info, true),
-        state: null as number | string | null,
+        state: initialSecondaryState,
         icon: entities.fossil_fuel_percentage?.secondary_info?.icon,
         unit: entities.fossil_fuel_percentage?.secondary_info?.unit_of_measurement,
         unit_white_space: entities.fossil_fuel_percentage?.secondary_info?.unit_white_space,
@@ -461,9 +465,6 @@ export class PowerFlowCardPlus extends LitElement {
     }
 
     if (solar.state.toHome !== null && solar.state.toHome < 0) {
-      // What we returned to the grid and what went in to the battery is more
-      // than produced, so we have used grid energy to fill the battery or
-      // returned battery energy to the grid
       if (battery.has) {
         grid.state.toBattery = Math.abs(solar.state.toHome);
         if (grid.state.toBattery > (grid.state.fromGrid ?? 0)) {
@@ -578,10 +579,9 @@ export class PowerFlowCardPlus extends LitElement {
     this.style.setProperty("--lines-svg-not-flat-line-height", isCardWideEnough ? "106%" : "102%");
     this.style.setProperty("--lines-svg-not-flat-line-top", isCardWideEnough ? "-3%" : "-1%");
 
-    let individual1Color = entities.individual1?.color;
-    if (individual1Color !== undefined) {
-      if (typeof individual1Color === "object") individual1Color = this.convertColorListToHex(individual1Color);
-      this.style.setProperty("--individualone-color", individual1Color); /* dynamically update color of entity depending on user's input */
+    if (individual1.color !== undefined) {
+      if (typeof individual1.color === "object") individual1.color = this.convertColorListToHex(individual1.color);
+      this.style.setProperty("--individualone-color", individual1.color); /* dynamically update color of entity depending on user's input */
     }
     this.style.setProperty(
       "--icon-individualone-color",
